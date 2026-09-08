@@ -68,7 +68,7 @@ public partial class MainWindow : Window
     private void CopyKey_Click(object sender, RoutedEventArgs e)
     {
         if (string.IsNullOrWhiteSpace(LicenseKeyBox.Text)) { SetStatus("Generate a license first.", false); return; }
-        Clipboard.SetText(LicenseKeyBox.Text);
+        System.Windows.Clipboard.SetText(LicenseKeyBox.Text);
         SetStatus("License key copied.", true);
     }
 

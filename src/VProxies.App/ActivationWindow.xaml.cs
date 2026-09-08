@@ -17,7 +17,7 @@ public partial class ActivationWindow : Window
 
     private void CopyDeviceId_Click(object sender, RoutedEventArgs e)
     {
-        Clipboard.SetText(_licenseService.DeviceId);
+        System.Windows.Clipboard.SetText(_licenseService.DeviceId);
         StatusText.Foreground = (System.Windows.Media.Brush)FindResource("SuccessBrush");
         StatusText.Text = "Device ID copied.";
     }
