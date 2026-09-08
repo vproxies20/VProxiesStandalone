@@ -42,7 +42,7 @@ public static class SingBoxConfigBuilder
         var root = new Dictionary<string, object?>
         {
             ["log"] = new Dictionary<string, object?> { ["level"] = "info", ["timestamp"] = true },
-            ["dns"] = BuildDns(routing.RemoteDns, dnsDetour),
+            ["dns"] = BuildDns(routing.RemoteDns, dnsDetour, routing.DnsServer),
             ["inbounds"] = new object[] { new Dictionary<string, object?> { ["type"] = "tun", ["tag"] = "tun-in", ["interface_name"] = "VProxiesSA", ["address"] = new[] { "172.19.0.1/30" }, ["mtu"] = 9000, ["auto_route"] = true, ["strict_route"] = routing.StrictRoute, ["stack"] = "mixed", ["dns_mode"] = "hijack" } },
             ["outbounds"] = outbounds,
             ["route"] = new Dictionary<string, object?> { ["rules"] = rules, ["final"] = finalOutbound, ["auto_detect_interface"] = true, ["find_process"] = true, ["default_domain_resolver"] = "dns-local" }
@@ -67,11 +67,11 @@ public static class SingBoxConfigBuilder
         return result;
     }
 
-    private static Dictionary<string, object?> BuildDns(bool remote, string? detour)
+    private static Dictionary<string, object?> BuildDns(bool remote, string? detour, string dnsServer)
     {
         var servers = new List<object> { new Dictionary<string, object?> { ["type"] = "local", ["tag"] = "dns-local" } };
         if (remote && !string.IsNullOrWhiteSpace(detour))
-            servers.Add(new Dictionary<string, object?> { ["type"] = "https", ["tag"] = "dns-proxy", ["server"] = "1.1.1.1", ["server_port"] = 443, ["path"] = "/dns-query", ["tls"] = new Dictionary<string, object?> { ["enabled"] = true, ["server_name"] = "cloudflare-dns.com" }, ["detour"] = detour });
+            servers.Add(new Dictionary<string, object?> { ["type"] = "tcp", ["tag"] = "dns-proxy", ["server"] = dnsServer, ["server_port"] = 53, ["detour"] = detour });
         return new Dictionary<string, object?> { ["servers"] = servers, ["final"] = remote && !string.IsNullOrWhiteSpace(detour) ? "dns-proxy" : "dns-local" };
     }
 
@@ -96,6 +96,8 @@ public static class SingBoxConfigBuilder
         foreach (var rule in routing.Rules)
             if (string.IsNullOrWhiteSpace(rule.ApplicationPath) || !rule.ApplicationPath.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
                 throw new ArgumentException("Every application rule must point to a Windows .exe file.");
+        if (routing.RemoteDns && !IPAddress.TryParse(routing.DnsServer, out _))
+            throw new ArgumentException("DNS server must be a valid IPv4 or IPv6 address.");
         _ = ResolveTarget(routing.DefaultTarget, routing.Proxies);
     }
 }
