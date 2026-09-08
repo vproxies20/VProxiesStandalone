@@ -318,8 +318,8 @@ public partial class MainWindow : Window
         ActivityLogPage.Visibility = page == ActivityLogPage ? Visibility.Visible : Visibility.Collapsed;
         foreach (var button in new[] { ProxyNavButton, SettingsNavButton, LogNavButton })
         {
-            button.Background = Brushes.Transparent;
-            button.BorderBrush = Brushes.Transparent;
+            button.Background = System.Windows.Media.Brushes.Transparent;
+            button.BorderBrush = System.Windows.Media.Brushes.Transparent;
             button.Foreground = Brush("#8FA3BE");
         }
         selectedButton.Background = Brush("#1C2A39");
