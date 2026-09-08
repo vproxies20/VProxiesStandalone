@@ -7,11 +7,11 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <AssemblyName>VProxies</AssemblyName>
+    <AssemblyName>VProxiesSA</AssemblyName>
     <RootNamespace>VProxies</RootNamespace>
-    <Version>1.1.1</Version>
+    <Version>1.2.0</Version>
     <Company>VProxies</Company>
-    <Product>VProxies for Windows</Product>
+    <Product>VProxies SA</Product>
     <ApplicationIcon>assets\vproxies.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
