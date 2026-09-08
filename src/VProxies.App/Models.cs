@@ -54,6 +54,7 @@ public sealed record RoutingSettings
     public string DefaultTarget { get; init; } = "direct";
     public bool StrictRoute { get; init; } = true;
     public bool RemoteDns { get; init; }
+    public string DnsServer { get; init; } = "1.1.1.1";
 }
 
 public sealed record StoredProxy
@@ -81,6 +82,7 @@ public sealed record StoredSettings
     public List<StoredApplicationRule> Rules { get; init; } = [];
     public string DefaultTarget { get; init; } = "direct";
     public bool RemoteDns { get; init; }
+    public string DnsServer { get; init; } = "1.1.1.1";
     public bool StrictRoute { get; init; } = true;
     public bool CloseToTray { get; init; } = true;
 }
