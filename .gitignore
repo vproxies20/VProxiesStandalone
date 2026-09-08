@@ -1,0 +1,8 @@
+artifacts/
+private-artifacts/
+runtime/
+*.user
+*.suo
+**/bin/
+**/obj/
+**/*private-key*.pem

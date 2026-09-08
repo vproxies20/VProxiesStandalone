@@ -3,6 +3,8 @@ name: Build VProxies SA Windows Installer
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -29,20 +31,34 @@ jobs:
         shell: powershell
         run: .\build-windows.ps1
 
+      - name: Compile private license generator (key excluded)
+        shell: powershell
+        run: |
+          dotnet publish .\tools\VProxiesSA.Keygen\VProxiesSA.Keygen.csproj -c Release -r win-x64 --self-contained true -o .\artifacts\keygen `
+            /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true /p:DebugType=None /p:DebugSymbols=false
+
+      - name: Upload key generator binary without private key
+        uses: actions/upload-artifact@v4
+        with:
+          name: VProxiesSA-License-Generator-no-key
+          path: artifacts/keygen/VProxiesSA-Keygen.exe
+          if-no-files-found: error
+          retention-days: 3
+
       - name: Create installer checksum
         shell: powershell
         run: |
-          $file = "artifacts/VProxiesSASetup-1.4.0-win-x64.exe"
+          $file = "artifacts/VProxiesSASetup-1.5.0-win-x64.exe"
           $hash = (Get-FileHash $file -Algorithm SHA256).Hash.ToLowerInvariant()
-          "$hash  VProxiesSASetup-1.4.0-win-x64.exe" | Set-Content "$file.sha256" -Encoding ascii
+          "$hash  VProxiesSASetup-1.5.0-win-x64.exe" | Set-Content "$file.sha256" -Encoding ascii
 
       - name: Upload installer
         uses: actions/upload-artifact@v4
         with:
-          name: VProxiesSASetup-1.4.0-win-x64
+          name: VProxiesSASetup-1.5.0-win-x64
           path: |
-            artifacts/VProxiesSASetup-1.4.0-win-x64.exe
-            artifacts/VProxiesSASetup-1.4.0-win-x64.exe.sha256
+            artifacts/VProxiesSASetup-1.5.0-win-x64.exe
+            artifacts/VProxiesSASetup-1.5.0-win-x64.exe.sha256
           if-no-files-found: error
           retention-days: 14
 
@@ -52,8 +68,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          $tag = "v1.4.0"
-          $installer = "artifacts/VProxiesSASetup-1.4.0-win-x64.exe"
+          $tag = "v1.5.0"
+          $installer = "artifacts/VProxiesSASetup-1.5.0-win-x64.exe"
           $checksum = "$installer.sha256"
           $previousErrorAction = $ErrorActionPreference
           $ErrorActionPreference = "Continue"
@@ -63,5 +79,5 @@ jobs:
           if ($releaseExists) {
             gh release upload $tag $installer $checksum --clobber --repo $env:GITHUB_REPOSITORY
           } else {
-            gh release create $tag $installer $checksum --target $env:GITHUB_SHA --title "VProxies SA 1.4.0" --generate-notes --repo $env:GITHUB_REPOSITORY
+            gh release create $tag $installer $checksum --target $env:GITHUB_SHA --title "VProxies SA 1.5.0" --generate-notes --repo $env:GITHUB_REPOSITORY
           }

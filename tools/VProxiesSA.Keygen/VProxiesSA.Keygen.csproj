@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>VProxiesSA-Keygen</AssemblyName>
+    <RootNamespace>VProxiesSA.Keygen</RootNamespace>
+    <Version>1.0.0</Version>
+    <Company>VProxies</Company>
+    <Product>VProxies SA License Generator</Product>
+  </PropertyGroup>
+</Project>
