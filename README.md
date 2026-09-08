@@ -1,4 +1,4 @@
-# VProxies SA 1.2.0 — Standalone multi-proxy routing for Windows
+# VProxies SA 1.2.1 — Standalone multi-proxy routing for Windows
 
 VProxies SA is an independent Windows proxy-routing client. It does not contain, derive from, or redistribute Proxifier code or drivers.
 
@@ -13,7 +13,7 @@ VProxies SA has a separate application identity from the packaged-proxy edition:
 - Configurable default action for applications without an explicit rule.
 - Real proxy handshake checker with latency measurement.
 - Proxy passwords encrypted locally with Windows DPAPI for the current Windows account.
-- Optional DNS through proxy; disabled by default.
+- Optional DNS leak protection through the proxy, with a saved custom IPv4/IPv6 DNS server; disabled by default.
 - Native WPF interface with the official VProxies logo and English-only copy.
 - Minimize to the Windows notification area. Tray `Exit` always asks for confirmation.
 - Clean shutdown of the complete sing-box process tree and removal of temporary configurations.
@@ -50,12 +50,12 @@ Set-ExecutionPolicy -Scope Process Bypass
 The installer is generated at:
 
 ```text
-artifacts\VProxiesSASetup-1.2.0-win-x64.exe
+artifacts\VProxiesSASetup-1.2.1-win-x64.exe
 ```
 
 ## GitHub Actions
 
-The `Build VProxies SA Windows Installer` workflow builds the installer, generates a SHA-256 file, uploads the build artifact, and publishes release `v1.2.0` from the `main` branch.
+The `Build VProxies SA Windows Installer` workflow builds the installer, generates a SHA-256 file, uploads the build artifact, and publishes release `v1.2.1` from the `main` branch.
 
 ## Runtime and security notes
 
