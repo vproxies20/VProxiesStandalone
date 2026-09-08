@@ -85,4 +85,5 @@ public sealed record StoredSettings
     public string DnsServer { get; init; } = "1.1.1.1";
     public bool StrictRoute { get; init; } = true;
     public bool CloseToTray { get; init; } = true;
+    public string Theme { get; init; } = "System";
 }
