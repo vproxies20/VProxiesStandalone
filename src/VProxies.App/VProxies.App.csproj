@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <AssemblyName>VProxies</AssemblyName>
+    <RootNamespace>VProxies</RootNamespace>
+    <Version>1.1.0</Version>
+    <Company>VProxies</Company>
+    <Product>VProxies for Windows</Product>
+    <ApplicationIcon>assets\vproxies.ico</ApplicationIcon>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Remove="assets\vproxies-logo.png" />
+    <Resource Include="assets\vproxies-logo.png" />
+  </ItemGroup>
+</Project>
