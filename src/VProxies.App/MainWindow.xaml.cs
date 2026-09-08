@@ -311,7 +311,7 @@ public partial class MainWindow : Window
     private void SettingsNav_Click(object sender, RoutedEventArgs e) => ShowPage(SettingsPage, SettingsNavButton, "VProxies SA", "SETTINGS");
     private void LogNav_Click(object sender, RoutedEventArgs e) => ShowPage(ActivityLogPage, LogNavButton, "VProxies SA", "ACTIVITY LOG");
 
-    private void ShowPage(UIElement page, Button selectedButton, string title, string subtitle)
+    private void ShowPage(UIElement page, System.Windows.Controls.Button selectedButton, string title, string subtitle)
     {
         ProxyPage.Visibility = page == ProxyPage ? Visibility.Visible : Visibility.Collapsed;
         SettingsPage.Visibility = page == SettingsPage ? Visibility.Visible : Visibility.Collapsed;
