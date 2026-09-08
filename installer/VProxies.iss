@@ -1,5 +1,5 @@
 #define MyAppName "VProxies SA"
-#define MyAppVersion "1.3.0"
+#define MyAppVersion "1.3.1"
 #define MyAppPublisher "VProxies"
 #define MyAppExeName "VProxiesSA.exe"
 
@@ -18,7 +18,7 @@ OutputBaseFilename=VProxiesSASetup-{#MyAppVersion}-win-x64
 Compression=lzma2/ultra64
 SolidCompression=yes
 WizardStyle=modern
-UninstallDisplayIcon={app}\{#MyAppExeName}
+UninstallDisplayIcon={app}\{#MyAppExeName},0
 SetupIconFile=..\src\VProxies.App\assets\vproxies.ico
 CloseApplications=yes
 RestartApplications=no
@@ -31,8 +31,8 @@ Source: "..\licenses\*"; DestDir: "{app}\licenses"; Flags: ignoreversion recurse
 Source: "..\THIRD-PARTY-NOTICES.md"; DestDir: "{app}\licenses"; Flags: ignoreversion
 
 [Icons]
-Name: "{autoprograms}\VProxies SA"; Filename: "{app}\{#MyAppExeName}"
-Name: "{autodesktop}\VProxies SA"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
+Name: "{autoprograms}\VProxies SA"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\{#MyAppExeName}"; IconIndex: 0
+Name: "{autodesktop}\VProxies SA"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\{#MyAppExeName}"; IconIndex: 0; Tasks: desktopicon
 
 [Tasks]
 Name: "desktopicon"; Description: "Create a desktop shortcut"; GroupDescription: "Additional icons:"
