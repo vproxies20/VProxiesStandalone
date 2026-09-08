@@ -1,4 +1,4 @@
-# VProxies for Windows 1.1.0 — Standalone multi-proxy routing
+# VProxies for Windows 1.1.1 — Standalone multi-proxy routing
 
 VProxies is an independent Windows proxy-routing client. It does not contain, derive from, or redistribute Proxifier code or drivers.
 
@@ -48,12 +48,12 @@ Set-ExecutionPolicy -Scope Process Bypass
 The installer is generated at:
 
 ```text
-artifacts\VProxiesSetup-1.1.0-win-x64.exe
+artifacts\VProxiesSetup-1.1.1-win-x64.exe
 ```
 
 ## GitHub Actions
 
-The `Build VProxies Windows Installer` workflow builds the installer, generates a SHA-256 file, uploads the build artifact, and publishes release `v1.1.0` from the `main` branch.
+The `Build VProxies Windows Installer` workflow builds the installer, generates a SHA-256 file, uploads the build artifact, and publishes release `v1.1.1` from the `main` branch.
 
 ## Runtime and security notes
 
