@@ -1,0 +1,211 @@
+using System.Diagnostics;
+using System.IO;
+using System.Net;
+using System.Text.Json;
+
+namespace VProxies;
+
+public static class SingBoxConfigBuilder
+{
+    public static string Build(RoutingSettings routing)
+    {
+        Validate(routing);
+        var direct = new Dictionary<string, object?> { ["type"] = "direct", ["tag"] = "direct" };
+        var block = new Dictionary<string, object?> { ["type"] = "block", ["tag"] = "block" };
+        var outbounds = routing.Proxies.Select(BuildProxy).Cast<object>().ToList();
+        outbounds.Add(direct);
+        outbounds.Add(block);
+        var rules = new List<object>
+        {
+            new Dictionary<string, object?> { ["process_name"] = new[] { "VProxies.exe", "sing-box.exe" }, ["action"] = "route", ["outbound"] = "direct" },
+            new Dictionary<string, object?> { ["ip_is_private"] = true, ["action"] = "route", ["outbound"] = "direct" }
+        };
+        foreach (var proxy in routing.Proxies)
+            if (IPAddress.TryParse(proxy.Host, out _))
+                rules.Add(new Dictionary<string, object?> { ["ip_cidr"] = new[] { proxy.Host + (proxy.Host.Contains(':') ? "/128" : "/32") }, ["action"] = "route", ["outbound"] = "direct" });
+
+        foreach (var rule in routing.Rules)
+        {
+            var outbound = ResolveTarget(rule.Target, routing.Proxies);
+            rules.Add(new Dictionary<string, object?>
+            {
+                ["process_path"] = new[] { rule.ApplicationPath },
+                ["process_name"] = new[] { Path.GetFileName(rule.ApplicationPath) },
+                ["action"] = "route",
+                ["outbound"] = outbound
+            });
+        }
+
+        var finalOutbound = ResolveTarget(routing.DefaultTarget, routing.Proxies);
+        var dnsDetour = finalOutbound.StartsWith("proxy-", StringComparison.Ordinal) ? finalOutbound : routing.Proxies.FirstOrDefault()?.OutboundTag;
+
+        var root = new Dictionary<string, object?>
+        {
+            ["log"] = new Dictionary<string, object?> { ["level"] = "info", ["timestamp"] = true },
+            ["dns"] = BuildDns(routing.RemoteDns, dnsDetour),
+            ["inbounds"] = new object[] { new Dictionary<string, object?> { ["type"] = "tun", ["tag"] = "tun-in", ["interface_name"] = "VProxies", ["address"] = new[] { "172.19.0.1/30" }, ["mtu"] = 9000, ["auto_route"] = true, ["strict_route"] = routing.StrictRoute, ["stack"] = "mixed", ["dns_mode"] = "hijack" } },
+            ["outbounds"] = outbounds,
+            ["route"] = new Dictionary<string, object?> { ["rules"] = rules, ["final"] = finalOutbound, ["auto_detect_interface"] = true, ["find_process"] = true, ["default_domain_resolver"] = "dns-local" }
+        };
+        return JsonSerializer.Serialize(root, new JsonSerializerOptions { WriteIndented = true });
+    }
+
+    private static Dictionary<string, object?> BuildProxy(LocalProxy proxy)
+    {
+        var p = proxy.ToSettings();
+        Dictionary<string, object?> result;
+        if (p.Protocol is ProxyProtocol.SOCKS4 or ProxyProtocol.SOCKS5)
+            result = new() { ["type"] = "socks", ["tag"] = proxy.OutboundTag, ["server"] = p.Host, ["server_port"] = p.Port, ["version"] = p.Protocol == ProxyProtocol.SOCKS4 ? "4a" : "5" };
+        else
+        {
+            result = new() { ["type"] = "http", ["tag"] = proxy.OutboundTag, ["server"] = p.Host, ["server_port"] = p.Port };
+            if (p.Protocol == ProxyProtocol.HTTPS) result["tls"] = new Dictionary<string, object?> { ["enabled"] = true, ["server_name"] = string.IsNullOrWhiteSpace(p.Sni) ? p.Host : p.Sni };
+        }
+        if (!string.IsNullOrEmpty(p.Username)) result["username"] = p.Username;
+        if (!string.IsNullOrEmpty(p.Password) && p.Protocol != ProxyProtocol.SOCKS4) result["password"] = p.Password;
+        if (!IPAddress.TryParse(p.Host, out _)) result["domain_resolver"] = "dns-local";
+        return result;
+    }
+
+    private static Dictionary<string, object?> BuildDns(bool remote, string? detour)
+    {
+        var servers = new List<object> { new Dictionary<string, object?> { ["type"] = "local", ["tag"] = "dns-local" } };
+        if (remote && !string.IsNullOrWhiteSpace(detour))
+            servers.Add(new Dictionary<string, object?> { ["type"] = "https", ["tag"] = "dns-proxy", ["server"] = "1.1.1.1", ["server_port"] = 443, ["path"] = "/dns-query", ["tls"] = new Dictionary<string, object?> { ["enabled"] = true, ["server_name"] = "cloudflare-dns.com" }, ["detour"] = detour });
+        return new Dictionary<string, object?> { ["servers"] = servers, ["final"] = remote && !string.IsNullOrWhiteSpace(detour) ? "dns-proxy" : "dns-local" };
+    }
+
+    private static string ResolveTarget(string target, IReadOnlyList<LocalProxy> proxies)
+    {
+        if (target is "direct" or "block") return target;
+        var proxy = proxies.FirstOrDefault(x => x.Id.Equals(target, StringComparison.OrdinalIgnoreCase));
+        return proxy?.OutboundTag ?? throw new ArgumentException("A routing rule refers to a proxy that no longer exists.");
+    }
+
+    private static void Validate(RoutingSettings routing)
+    {
+        var duplicateName = routing.Proxies.GroupBy(x => x.Name.Trim(), StringComparer.OrdinalIgnoreCase).FirstOrDefault(x => x.Count() > 1);
+        if (duplicateName is not null) throw new ArgumentException($"Proxy name '{duplicateName.Key}' is duplicated.");
+        foreach (var proxy in routing.Proxies)
+        {
+            if (string.IsNullOrWhiteSpace(proxy.Host)) throw new ArgumentException($"{proxy.Name}: host is required.");
+            if (proxy.Port is < 1 or > 65535) throw new ArgumentException($"{proxy.Name}: port must be between 1 and 65535.");
+        }
+        var duplicateApp = routing.Rules.GroupBy(x => x.ApplicationPath, StringComparer.OrdinalIgnoreCase).FirstOrDefault(x => x.Count() > 1);
+        if (duplicateApp is not null) throw new ArgumentException($"Only one routing rule is allowed for {Path.GetFileName(duplicateApp.Key)}.");
+        foreach (var rule in routing.Rules)
+            if (string.IsNullOrWhiteSpace(rule.ApplicationPath) || !rule.ApplicationPath.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
+                throw new ArgumentException("Every application rule must point to a Windows .exe file.");
+        _ = ResolveTarget(routing.DefaultTarget, routing.Proxies);
+    }
+}
+
+public sealed class SingBoxCore : IDisposable
+{
+    private Process? _process;
+    private readonly ChildProcessJob _childProcessJob = new();
+    private readonly SemaphoreSlim _stopGate = new(1, 1);
+    public event Action<string>? Log;
+    public bool IsRunning => _process is { HasExited: false };
+    private string RuntimeDir => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "VProxies", "runtime");
+    private string Executable => Path.Combine(AppContext.BaseDirectory, "runtime", "sing-box.exe");
+
+    public async Task StartAsync(string config)
+    {
+        if (IsRunning) return;
+        if (!File.Exists(Executable)) throw new FileNotFoundException("Place sing-box.exe in the runtime folder.", Executable);
+        Directory.CreateDirectory(RuntimeDir);
+        var configPath = Path.Combine(RuntimeDir, $"config-{Guid.NewGuid():N}.json");
+        await File.WriteAllTextAsync(configPath, config);
+        try
+        {
+            await RunCheck(configPath);
+            var process = new Process { StartInfo = CreateStartInfo($"run -c \"{configPath}\"") , EnableRaisingEvents = true };
+            process.OutputDataReceived += (_, e) => { if (e.Data is not null) Log?.Invoke(e.Data); };
+            process.ErrorDataReceived += (_, e) => { if (e.Data is not null) Log?.Invoke(e.Data); };
+            process.Exited += (_, _) => { if (ReferenceEquals(_process, process)) Log?.Invoke($"Core exited with code {process.ExitCode}."); };
+            process.Start();
+            _process = process;
+            try { _childProcessJob.Add(process); }
+            catch
+            {
+                try { process.Kill(true); } catch { }
+                _process = null;
+                process.Dispose();
+                throw;
+            }
+            process.BeginOutputReadLine(); process.BeginErrorReadLine();
+            await Task.Delay(1200);
+            if (process.HasExited) throw new InvalidOperationException($"sing-box stopped during startup (exit {process.ExitCode}).");
+            await FlushDnsAsync(); Log?.Invoke("Core started and DNS cache flushed.");
+        }
+        finally
+        {
+            try { File.Delete(configPath); } catch { }
+        }
+    }
+    public async Task StopAsync()
+    {
+        await _stopGate.WaitAsync();
+        try
+        {
+            var process = Interlocked.Exchange(ref _process, null);
+            if (process is not null)
+            {
+                try
+                {
+                    if (!process.HasExited) process.Kill(true);
+                    using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+                    try { await process.WaitForExitAsync(timeout.Token); }
+                    catch (OperationCanceledException) { try { if (!process.HasExited) process.Kill(true); } catch { } }
+                }
+                catch { }
+                finally { process.Dispose(); }
+            }
+            CleanupConfigFiles();
+            await FlushDnsAsync();
+            Log?.Invoke("Core stopped and network state released.");
+        }
+        finally { _stopGate.Release(); }
+    }
+    private async Task RunCheck(string path)
+    {
+        using var check = new Process { StartInfo = CreateStartInfo($"check -c \"{path}\"") };
+        check.Start(); var stdout = await check.StandardOutput.ReadToEndAsync(); var stderr = await check.StandardError.ReadToEndAsync(); await check.WaitForExitAsync();
+        if (check.ExitCode != 0) throw new InvalidOperationException("Invalid sing-box config: " + (stderr + stdout).Trim());
+    }
+    private ProcessStartInfo CreateStartInfo(string args) => new(Executable, args) { UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true, WorkingDirectory = RuntimeDir };
+    private void CleanupConfigFiles()
+    {
+        try
+        {
+            if (!Directory.Exists(RuntimeDir)) return;
+            foreach (var path in Directory.EnumerateFiles(RuntimeDir, "config*.json")) try { File.Delete(path); } catch { }
+        }
+        catch { }
+    }
+    private static async Task FlushDnsAsync()
+    {
+        try
+        {
+            using var process = Process.Start(new ProcessStartInfo("ipconfig.exe", "/flushdns") { UseShellExecute = false, CreateNoWindow = true });
+            if (process is null) return;
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+            try { await process.WaitForExitAsync(timeout.Token); }
+            catch (OperationCanceledException) { try { if (!process.HasExited) process.Kill(true); } catch { } }
+        }
+        catch { }
+    }
+    public void Dispose()
+    {
+        var process = Interlocked.Exchange(ref _process, null);
+        if (process is not null)
+        {
+            try { if (!process.HasExited) process.Kill(true); } catch { }
+            process.Dispose();
+        }
+        CleanupConfigFiles();
+        _childProcessJob.Dispose();
+        _stopGate.Dispose();
+    }
+}
