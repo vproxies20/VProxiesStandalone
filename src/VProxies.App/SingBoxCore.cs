@@ -17,7 +17,7 @@ public static class SingBoxConfigBuilder
         outbounds.Add(block);
         var rules = new List<object>
         {
-            new Dictionary<string, object?> { ["process_name"] = new[] { "VProxies.exe", "sing-box.exe" }, ["action"] = "route", ["outbound"] = "direct" },
+            new Dictionary<string, object?> { ["process_name"] = new[] { "VProxiesSA.exe", "sing-box.exe" }, ["action"] = "route", ["outbound"] = "direct" },
             new Dictionary<string, object?> { ["ip_is_private"] = true, ["action"] = "route", ["outbound"] = "direct" }
         };
         foreach (var proxy in routing.Proxies)
@@ -43,7 +43,7 @@ public static class SingBoxConfigBuilder
         {
             ["log"] = new Dictionary<string, object?> { ["level"] = "info", ["timestamp"] = true },
             ["dns"] = BuildDns(routing.RemoteDns, dnsDetour),
-            ["inbounds"] = new object[] { new Dictionary<string, object?> { ["type"] = "tun", ["tag"] = "tun-in", ["interface_name"] = "VProxies", ["address"] = new[] { "172.19.0.1/30" }, ["mtu"] = 9000, ["auto_route"] = true, ["strict_route"] = routing.StrictRoute, ["stack"] = "mixed", ["dns_mode"] = "hijack" } },
+            ["inbounds"] = new object[] { new Dictionary<string, object?> { ["type"] = "tun", ["tag"] = "tun-in", ["interface_name"] = "VProxiesSA", ["address"] = new[] { "172.19.0.1/30" }, ["mtu"] = 9000, ["auto_route"] = true, ["strict_route"] = routing.StrictRoute, ["stack"] = "mixed", ["dns_mode"] = "hijack" } },
             ["outbounds"] = outbounds,
             ["route"] = new Dictionary<string, object?> { ["rules"] = rules, ["final"] = finalOutbound, ["auto_detect_interface"] = true, ["find_process"] = true, ["default_domain_resolver"] = "dns-local" }
         };
@@ -107,7 +107,7 @@ public sealed class SingBoxCore : IDisposable
     private readonly SemaphoreSlim _stopGate = new(1, 1);
     public event Action<string>? Log;
     public bool IsRunning => _process is { HasExited: false };
-    private string RuntimeDir => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "VProxies", "runtime");
+    private string RuntimeDir => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "VProxiesSA", "runtime");
     private string Executable => Path.Combine(AppContext.BaseDirectory, "runtime", "sing-box.exe");
 
     public async Task StartAsync(string config)
