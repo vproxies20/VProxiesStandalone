@@ -14,7 +14,7 @@ public sealed class TrayIcon : IDisposable
     public TrayIcon()
     {
         _menu = new Forms.ContextMenuStrip();
-        var showItem = new Forms.ToolStripMenuItem("Open VProxies");
+        var showItem = new Forms.ToolStripMenuItem("Open VProxies SA");
         var exitItem = new Forms.ToolStripMenuItem("Exit");
         showItem.Click += (_, _) => ShowRequested?.Invoke();
         exitItem.Click += (_, _) => ExitRequested?.Invoke();
@@ -27,7 +27,7 @@ public sealed class TrayIcon : IDisposable
             : SystemIcons.Application;
         _notifyIcon = new Forms.NotifyIcon
         {
-            Text = "VProxies",
+            Text = "VProxies SA",
             Icon = icon ?? SystemIcons.Application,
             ContextMenuStrip = _menu,
             Visible = true
@@ -37,7 +37,7 @@ public sealed class TrayIcon : IDisposable
 
     public void ShowMinimizedNotice() => _notifyIcon.ShowBalloonTip(
         1800,
-        "VProxies is still running",
+        "VProxies SA is still running",
         "Double-click the tray icon to reopen it. Choose Exit to stop the proxy and close completely.",
         Forms.ToolTipIcon.Info);
 
