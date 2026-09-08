@@ -9,7 +9,7 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <AssemblyName>VProxiesSA</AssemblyName>
     <RootNamespace>VProxies</RootNamespace>
-    <Version>1.2.1</Version>
+    <Version>1.3.0</Version>
     <Company>VProxies</Company>
     <Product>VProxies SA</Product>
     <ApplicationIcon>assets\vproxies.ico</ApplicationIcon>
