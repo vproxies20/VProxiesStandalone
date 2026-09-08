@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.IO;
 using System.Net;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
@@ -39,7 +40,7 @@ public partial class MainWindow : Window
         Closing += MainWindow_Closing;
         LoadSettings();
         ShowPage(ProxyPage, ProxyNavButton, "VProxies SA", "Local multi-proxy routing");
-        AppendLog("VProxies SA 1.3.1 ready. Local routing only; no account or API connection.");
+        AppendLog("VProxies SA 1.4.0 ready.");
     }
 
     private void LoadSettings()
@@ -69,6 +70,9 @@ public partial class MainWindow : Window
             RemoteDnsBox.IsChecked = settings.RemoteDns;
             DnsServerBox.Text = string.IsNullOrWhiteSpace(settings.DnsServer) ? "1.1.1.1" : settings.DnsServer;
             CloseToTrayBox.IsChecked = settings.CloseToTray;
+            var theme = settings.Theme is "Light" or "Dark" ? settings.Theme : "System";
+            ThemeBox.SelectedIndex = theme == "Light" ? 1 : theme == "Dark" ? 2 : 0;
+            ApplyTheme(theme);
             RefreshProxyGrid();
             RefreshTargets(TargetExists(settings.DefaultTarget) ? settings.DefaultTarget : "direct", "direct");
             NewProxyForm();
@@ -92,7 +96,8 @@ public partial class MainWindow : Window
             StrictRoute = StrictRouteBox.IsChecked == true,
             RemoteDns = RemoteDnsBox.IsChecked == true,
             DnsServer = string.IsNullOrWhiteSpace(DnsServerBox.Text) ? "1.1.1.1" : DnsServerBox.Text.Trim(),
-            CloseToTray = CloseToTrayBox.IsChecked == true
+            CloseToTray = CloseToTrayBox.IsChecked == true,
+            Theme = SelectedTheme()
         });
     }
 
@@ -305,6 +310,98 @@ public partial class MainWindow : Window
     private void Settings_Changed(object sender, RoutedEventArgs e)
     {
         if (!_loadingSettings) SaveSettings();
+    }
+
+    private void Theme_Changed(object sender, SelectionChangedEventArgs e)
+    {
+        if (_loadingSettings || !IsInitialized) return;
+        ApplyTheme(SelectedTheme());
+        SaveSettings();
+    }
+
+    private string SelectedTheme() => (ThemeBox.SelectedItem as ComboBoxItem)?.Content?.ToString() switch
+    {
+        "Light" => "Light",
+        "Dark" => "Dark",
+        _ => "System"
+    };
+
+    private void ApplyTheme(string selection)
+    {
+        var light = selection == "Light" || selection == "System" && WindowsUsesLightTheme();
+        SetThemeBrush("PageBrush", light ? "#E8EDF3" : "#141B27");
+        SetThemeBrush("SidebarBrush", light ? "#F7F9FC" : "#101822");
+        SetThemeBrush("PanelBrush", light ? "#FFFFFF" : "#192230");
+        SetThemeBrush("AltPanelBrush", light ? "#F3F6FA" : "#1D2735");
+        SetThemeBrush("InputBrush", light ? "#F7F9FC" : "#171F2C");
+        SetThemeBrush("LineBrush", light ? "#CBD5E1" : "#303B4B");
+        SetThemeBrush("TextBrush", light ? "#182230" : "#F5F7FA");
+        SetThemeBrush("MutedBrush", light ? "#5F6F82" : "#8FA3BE");
+
+        var input = Brush(light ? "#F7F9FC" : "#171F2C");
+        var alternate = Brush(light ? "#EEF2F7" : "#1D2735");
+        var text = Brush(light ? "#182230" : "#EAF0F7");
+        var line = Brush(light ? "#CBD5E1" : "#303B4B");
+        foreach (var grid in new[] { ProxyGrid, RuleGrid })
+        {
+            grid.Background = input;
+            grid.RowBackground = input;
+            grid.AlternatingRowBackground = alternate;
+            grid.Foreground = text;
+            grid.BorderBrush = line;
+            grid.HorizontalGridLinesBrush = line;
+        }
+    }
+
+    private static bool WindowsUsesLightTheme()
+    {
+        try
+        {
+            var value = Microsoft.Win32.Registry.GetValue(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize", "AppsUseLightTheme", 0);
+            return value is int number && number != 0;
+        }
+        catch { return false; }
+    }
+
+    private static void SetThemeBrush(string key, string color) =>
+        System.Windows.Application.Current.Resources[key] = Brush(color);
+
+    private void ExportConfig_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            SaveSettings();
+            var dialog = new Microsoft.Win32.SaveFileDialog
+            {
+                Title = "Export VProxies SA configuration",
+                Filter = "VProxies SA configuration (*.json)|*.json",
+                FileName = $"VProxiesSA-config-{DateTime.Now:yyyyMMdd}.json",
+                AddExtension = true,
+                DefaultExt = ".json"
+            };
+            if (dialog.ShowDialog(this) != true) return;
+            File.WriteAllText(dialog.FileName, JsonSerializer.Serialize(_store.Load(), new JsonSerializerOptions { WriteIndented = true }));
+            AppendLog($"Configuration exported to {dialog.FileName}.");
+        }
+        catch (Exception ex) { ShowError(ex); }
+    }
+
+    private async void ImportConfig_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var dialog = new Microsoft.Win32.OpenFileDialog { Title = "Import VProxies SA configuration", Filter = "VProxies SA configuration (*.json)|*.json", CheckFileExists = true, Multiselect = false };
+            if (dialog.ShowDialog(this) != true) return;
+            if (new FileInfo(dialog.FileName).Length > 5 * 1024 * 1024) throw new InvalidDataException("The configuration file is too large.");
+            var imported = JsonSerializer.Deserialize<StoredSettings>(File.ReadAllText(dialog.FileName), new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
+                ?? throw new InvalidDataException("The configuration file is empty or invalid.");
+            if (System.Windows.MessageBox.Show(this, "Import this configuration and replace the current proxy list, rules, and settings?", "VProxies SA", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes) return;
+            if (_core.IsRunning) { await _core.StopAsync(); SetRoutingState(false); }
+            _store.Save(imported);
+            LoadSettings();
+            AppendLog($"Configuration imported from {dialog.FileName}.");
+        }
+        catch (Exception ex) { ShowError(ex); }
     }
 
     private void ProxyNav_Click(object sender, RoutedEventArgs e) => ShowPage(ProxyPage, ProxyNavButton, "VProxies SA", "Local multi-proxy routing");
