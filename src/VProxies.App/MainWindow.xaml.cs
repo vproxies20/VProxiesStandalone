@@ -37,7 +37,7 @@ public partial class MainWindow : Window
         StateChanged += MainWindow_StateChanged;
         Closing += MainWindow_Closing;
         LoadSettings();
-        AppendLog("VProxies 1.1.1 ready. Local routing only; no account or API connection.");
+        AppendLog("VProxies SA 1.2.0 ready. Local routing only; no account or API connection.");
     }
 
     private void LoadSettings()
@@ -214,7 +214,7 @@ public partial class MainWindow : Window
             using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(15));
             var elapsed = await ProxyTester.TestAsync(ReadProxyForm(_editingProxyId ?? Guid.NewGuid().ToString("N")).ToSettings(), timeout.Token);
             AppendLog($"Proxy check succeeded in {elapsed.TotalMilliseconds:0} ms.");
-            System.Windows.MessageBox.Show(this, $"Proxy connection succeeded in {elapsed.TotalMilliseconds:0} ms.", "VProxies Proxy Check", MessageBoxButton.OK, MessageBoxImage.Information);
+            System.Windows.MessageBox.Show(this, $"Proxy connection succeeded in {elapsed.TotalMilliseconds:0} ms.", "VProxies SA Proxy Check", MessageBoxButton.OK, MessageBoxImage.Information);
         }
         catch (Exception ex) { ShowError(ex); }
         finally { TestProxyButton.IsEnabled = true; }
@@ -225,7 +225,7 @@ public partial class MainWindow : Window
         if (_editingProxyId is null || _proxies.FirstOrDefault(x => x.Id == _editingProxyId) is not { } proxy) return;
         var usedBy = _rules.Count(x => x.Target == proxy.Id) + ((DefaultTargetBox.SelectedValue as string) == proxy.Id ? 1 : 0);
         var detail = usedBy > 0 ? $"\n\n{usedBy} route(s) use this proxy and will be changed to Direct." : "";
-        if (System.Windows.MessageBox.Show(this, $"Delete {proxy.Name}?{detail}", "VProxies", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes) return;
+        if (System.Windows.MessageBox.Show(this, $"Delete {proxy.Name}?{detail}", "VProxies SA", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes) return;
         _proxies.Remove(proxy);
         for (var i = 0; i < _rules.Count; i++) if (_rules[i].Target == proxy.Id) _rules[i] = CreateRule(_rules[i].Id, _rules[i].ApplicationPath, "direct");
         var defaultTarget = (DefaultTargetBox.SelectedValue as string) == proxy.Id ? "direct" : DefaultTargetBox.SelectedValue as string;
@@ -290,7 +290,7 @@ public partial class MainWindow : Window
     private void DeleteRule_Click(object sender, RoutedEventArgs e)
     {
         if (_editingRuleId is null || _rules.FirstOrDefault(x => x.Id == _editingRuleId) is not { } rule) return;
-        if (System.Windows.MessageBox.Show(this, $"Delete the routing rule for {rule.ApplicationName}?", "VProxies", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes) return;
+        if (System.Windows.MessageBox.Show(this, $"Delete the routing rule for {rule.ApplicationName}?", "VProxies SA", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes) return;
         _rules.Remove(rule);
         RefreshRuleGrid();
         SaveSettings();
@@ -397,7 +397,7 @@ public partial class MainWindow : Window
     private async Task ExitApplicationAsync(bool confirm)
     {
         if (_shutdownInProgress) return;
-        if (confirm && System.Windows.MessageBox.Show("Exit VProxies completely?\n\nActive routing will stop and all applications will return to their normal connection.", "Exit VProxies", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes) return;
+        if (confirm && System.Windows.MessageBox.Show("Exit VProxies SA completely?\n\nActive routing will stop and all applications will return to their normal connection.", "Exit VProxies SA", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes) return;
         _shutdownInProgress = true;
         try { SaveSettings(); } catch { }
         try { await _core.StopAsync(); }
@@ -414,7 +414,7 @@ public partial class MainWindow : Window
     {
         var message = SanitizeMessage(exception.Message);
         AppendLog("ERROR: " + message);
-        System.Windows.MessageBox.Show(this, message, "VProxies", MessageBoxButton.OK, MessageBoxImage.Error);
+        System.Windows.MessageBox.Show(this, message, "VProxies SA", MessageBoxButton.OK, MessageBoxImage.Error);
     }
 
     private string SanitizeMessage(string message)
