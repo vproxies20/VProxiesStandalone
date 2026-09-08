@@ -21,7 +21,10 @@ public partial class MainWindow : Window
     private readonly HashSet<string> _sensitiveLogValues = new(StringComparer.OrdinalIgnoreCase);
     private string? _editingProxyId;
     private string? _editingRuleId;
-    private bool _loadingSettings;
+    // XAML controls can raise Checked/SelectionChanged while InitializeComponent is
+    // still constructing the visual tree. Keep persistence disabled until every
+    // named control exists and LoadSettings has finished.
+    private bool _loadingSettings = true;
     private bool _exitRequested;
     private bool _shutdownInProgress;
 
@@ -34,7 +37,7 @@ public partial class MainWindow : Window
         StateChanged += MainWindow_StateChanged;
         Closing += MainWindow_Closing;
         LoadSettings();
-        AppendLog("VProxies 1.1.0 ready. Local routing only; no account or API connection.");
+        AppendLog("VProxies 1.1.1 ready. Local routing only; no account or API connection.");
     }
 
     private void LoadSettings()
@@ -73,7 +76,7 @@ public partial class MainWindow : Window
 
     private void SaveSettings()
     {
-        if (_loadingSettings) return;
+        if (_loadingSettings || !IsInitialized) return;
         _store.Save(new StoredSettings
         {
             Proxies = _proxies.Select(x => new StoredProxy
