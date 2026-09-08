@@ -1,20 +1,20 @@
-#define MyAppName "VProxies"
-#define MyAppVersion "1.1.1"
+#define MyAppName "VProxies SA"
+#define MyAppVersion "1.2.0"
 #define MyAppPublisher "VProxies"
-#define MyAppExeName "VProxies.exe"
+#define MyAppExeName "VProxiesSA.exe"
 
 [Setup]
-AppId={{7CB46111-F1AE-421E-A15B-135177A46E25}
+AppId={{A7B81D65-9C2F-4E8E-A2E2-46F544F0A19B}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppPublisher={#MyAppPublisher}
-DefaultDirName={autopf}\VProxies
-DefaultGroupName=VProxies
+DefaultDirName={autopf}\VProxiesSA
+DefaultGroupName=VProxies SA
 PrivilegesRequired=admin
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 OutputDir=..\artifacts
-OutputBaseFilename=VProxiesSetup-{#MyAppVersion}-win-x64
+OutputBaseFilename=VProxiesSASetup-{#MyAppVersion}-win-x64
 Compression=lzma2/ultra64
 SolidCompression=yes
 WizardStyle=modern
@@ -31,11 +31,11 @@ Source: "..\licenses\*"; DestDir: "{app}\licenses"; Flags: ignoreversion recurse
 Source: "..\THIRD-PARTY-NOTICES.md"; DestDir: "{app}\licenses"; Flags: ignoreversion
 
 [Icons]
-Name: "{autoprograms}\VProxies"; Filename: "{app}\{#MyAppExeName}"
-Name: "{autodesktop}\VProxies"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
+Name: "{autoprograms}\VProxies SA"; Filename: "{app}\{#MyAppExeName}"
+Name: "{autodesktop}\VProxies SA"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
 
 [Tasks]
 Name: "desktopicon"; Description: "Create a desktop shortcut"; GroupDescription: "Additional icons:"
 
 [Run]
-Filename: "{app}\{#MyAppExeName}"; Description: "Launch VProxies"; Flags: nowait postinstall skipifsilent runascurrentuser
+Filename: "{app}\{#MyAppExeName}"; Description: "Launch VProxies SA"; Flags: nowait postinstall skipifsilent runascurrentuser
