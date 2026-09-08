@@ -22,7 +22,7 @@ VProxies SA has a separate application identity from the packaged-proxy edition:
 - Minimize to the Windows notification area. Tray `Exit` always asks for confirmation.
 - Clean shutdown of the complete sing-box process tree and removal of temporary configurations.
 - Single-instance protection and no CMD/PowerShell/Python window at runtime.
-- Offline ECDSA-signed license activation, bound to one Windows computer.
+- Offline ECDSA-signed license activation tied to the customer's order email.
 - Lifetime or expiring licenses issued with a separate private generator that is never included in the customer installer.
 
 ## Routing example

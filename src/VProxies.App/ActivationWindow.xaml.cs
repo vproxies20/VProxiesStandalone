@@ -10,21 +10,14 @@ public partial class ActivationWindow : Window
     {
         InitializeComponent();
         _licenseService = licenseService;
-        DeviceIdBox.Text = licenseService.DeviceId;
         StatusText.Text = initialMessage ?? "";
-        LicenseKeyBox.Focus();
-    }
-
-    private void CopyDeviceId_Click(object sender, RoutedEventArgs e)
-    {
-        System.Windows.Clipboard.SetText(_licenseService.DeviceId);
-        StatusText.Foreground = (System.Windows.Media.Brush)FindResource("SuccessBrush");
-        StatusText.Text = "Device ID copied.";
+        EmailBox.Text = licenseService.CurrentLicense?.Email ?? "";
+        if (string.IsNullOrWhiteSpace(EmailBox.Text)) EmailBox.Focus(); else LicenseKeyBox.Focus();
     }
 
     private void Activate_Click(object sender, RoutedEventArgs e)
     {
-        var status = _licenseService.Activate(LicenseKeyBox.Text);
+        var status = _licenseService.Activate(EmailBox.Text, LicenseKeyBox.Text);
         StatusText.Foreground = (System.Windows.Media.Brush)FindResource(status.IsValid ? "SuccessBrush" : "DangerBrush");
         StatusText.Text = status.Message;
         if (!status.IsValid) return;

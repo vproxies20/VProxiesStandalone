@@ -1,7 +1,5 @@
-using Microsoft.Win32;
 using System.IO;
 using System.Security.Cryptography;
-using System.Text;
 using System.Text.Json;
 
 namespace VProxies;
@@ -10,11 +8,16 @@ public sealed record LicensePayload
 {
     public int Version { get; init; }
     public string Product { get; init; } = "";
-    public string DeviceId { get; init; } = "";
-    public string Customer { get; init; } = "";
+    public string Email { get; init; } = "";
     public long IssuedAt { get; init; }
     public long? ExpiresAt { get; init; }
     public string LicenseId { get; init; } = "";
+}
+
+public sealed record StoredLicense
+{
+    public string Email { get; init; } = "";
+    public string Key { get; init; } = "";
 }
 
 public sealed record LicenseStatus(bool IsValid, string Message, LicensePayload? License = null);
@@ -34,7 +37,6 @@ public sealed class LicenseService
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "VProxiesSA", "license.dat");
 
-    public string DeviceId { get; } = CreateDeviceId();
     public LicensePayload? CurrentLicense { get; private set; }
 
     public LicenseStatus LoadInstalledLicense()
@@ -42,10 +44,12 @@ public sealed class LicenseService
         try
         {
             if (!File.Exists(_licensePath)) return new(false, "A license key is required.");
-            var protectedKey = File.ReadAllText(_licensePath).Trim();
-            var key = SecretStore.Unprotect(protectedKey);
-            if (string.IsNullOrWhiteSpace(key)) return new(false, "The saved license cannot be opened by this Windows user.");
-            return Validate(key);
+            var protectedLicense = File.ReadAllText(_licensePath).Trim();
+            var json = SecretStore.Unprotect(protectedLicense);
+            var stored = JsonSerializer.Deserialize<StoredLicense>(json);
+            if (stored is null || string.IsNullOrWhiteSpace(stored.Email) || string.IsNullOrWhiteSpace(stored.Key))
+                return new(false, "The saved license cannot be opened by this Windows user.");
+            return Validate(stored.Email, stored.Key);
         }
         catch (Exception ex)
         {
@@ -53,22 +57,25 @@ public sealed class LicenseService
         }
     }
 
-    public LicenseStatus Activate(string key)
+    public LicenseStatus Activate(string email, string key)
     {
-        var status = Validate(key);
+        var status = Validate(email, key);
         if (!status.IsValid) return status;
 
         Directory.CreateDirectory(Path.GetDirectoryName(_licensePath)!);
         var temporary = _licensePath + ".tmp";
-        File.WriteAllText(temporary, SecretStore.Protect(NormalizeKey(key)));
+        var stored = JsonSerializer.Serialize(new StoredLicense { Email = NormalizeEmail(email), Key = NormalizeKey(key) });
+        File.WriteAllText(temporary, SecretStore.Protect(stored));
         File.Move(temporary, _licensePath, true);
         return status;
     }
 
-    public LicenseStatus Validate(string key)
+    public LicenseStatus Validate(string email, string key)
     {
         try
         {
+            var normalizedEmail = NormalizeEmail(email);
+            if (!IsValidEmail(normalizedEmail)) return new(false, "Enter the email address used for the order.");
             var normalized = NormalizeKey(key);
             var parts = normalized.Split('.');
             if (parts.Length != 3 || !parts[0].Equals(KeyPrefix, StringComparison.Ordinal))
@@ -85,8 +92,8 @@ public sealed class LicenseService
                 ?? throw new InvalidDataException("The license data is empty.");
             if (license.Version != 1 || !license.Product.Equals(ProductId, StringComparison.Ordinal))
                 return new(false, "This license is for a different product or version.");
-            if (!NormalizeDeviceId(license.DeviceId).Equals(NormalizeDeviceId(DeviceId), StringComparison.OrdinalIgnoreCase))
-                return new(false, "This license belongs to another computer.");
+            if (!NormalizeEmail(license.Email).Equals(normalizedEmail, StringComparison.Ordinal))
+                return new(false, "The email address does not match this license key.");
 
             var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
             if (license.IssuedAt > now + 24 * 60 * 60)
@@ -114,31 +121,19 @@ public sealed class LicenseService
     public string DescribeCurrentLicense()
     {
         if (CurrentLicense is not { } license) return "No active license";
-        var owner = string.IsNullOrWhiteSpace(license.Customer) ? "Licensed device" : license.Customer;
         var expiry = license.ExpiresAt is { } value
             ? DateTimeOffset.FromUnixTimeSeconds(value).ToLocalTime().ToString("yyyy-MM-dd")
             : "Lifetime";
-        return $"{owner} · {expiry}";
-    }
-
-    private static string CreateDeviceId()
-    {
-        string machineGuid;
-        try
-        {
-            machineGuid = Registry.GetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Cryptography", "MachineGuid", null)?.ToString() ?? "";
-        }
-        catch { machineGuid = ""; }
-
-        if (string.IsNullOrWhiteSpace(machineGuid))
-            machineGuid = $"{Environment.MachineName}|{Environment.OSVersion.VersionString}";
-
-        var hash = SHA256.HashData(Encoding.UTF8.GetBytes(ProductId + "|" + machineGuid.Trim().ToUpperInvariant()));
-        return string.Join('-', Convert.ToHexString(hash.AsSpan(0, 16)).Chunk(4).Select(chars => new string(chars)));
+        return $"{license.Email} · {expiry}";
     }
 
     private static string NormalizeKey(string value) => string.Concat((value ?? "").Where(c => !char.IsWhiteSpace(c)));
-    private static string NormalizeDeviceId(string value) => (value ?? "").Replace("-", "", StringComparison.Ordinal).Trim();
+    private static string NormalizeEmail(string value) => (value ?? "").Trim().ToLowerInvariant();
+    private static bool IsValidEmail(string value)
+    {
+        try { return new System.Net.Mail.MailAddress(value).Address.Equals(value, StringComparison.OrdinalIgnoreCase); }
+        catch { return false; }
+    }
 
     public static byte[] Base64UrlDecode(string value)
     {

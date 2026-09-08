@@ -43,7 +43,6 @@ public partial class MainWindow : Window
         LoadSettings();
         ShowPage(ProxyPage, ProxyNavButton, "VProxies SA", "Local multi-proxy routing");
         LicenseStatusText.Text = _licenseService.DescribeCurrentLicense();
-        LicenseDeviceText.Text = _licenseService.DeviceId;
         AppendLog("VProxies SA 1.5.0 ready.");
     }
 
