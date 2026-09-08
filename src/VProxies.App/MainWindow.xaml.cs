@@ -18,6 +18,7 @@ public partial class MainWindow : Window
     private readonly SettingsStore _store = new();
     private readonly SingBoxCore _core = new();
     private readonly TrayIcon _trayIcon = new();
+    private readonly LicenseService _licenseService;
     private readonly List<LocalProxy> _proxies = [];
     private readonly List<ApplicationRule> _rules = [];
     private readonly HashSet<string> _sensitiveLogValues = new(StringComparer.OrdinalIgnoreCase);
@@ -30,8 +31,9 @@ public partial class MainWindow : Window
     private bool _exitRequested;
     private bool _shutdownInProgress;
 
-    public MainWindow()
+    public MainWindow(LicenseService licenseService)
     {
+        _licenseService = licenseService;
         InitializeComponent();
         _core.Log += AppendLog;
         _trayIcon.ShowRequested += RestoreFromTray;
@@ -40,7 +42,9 @@ public partial class MainWindow : Window
         Closing += MainWindow_Closing;
         LoadSettings();
         ShowPage(ProxyPage, ProxyNavButton, "VProxies SA", "Local multi-proxy routing");
-        AppendLog("VProxies SA 1.4.0 ready.");
+        LicenseStatusText.Text = _licenseService.DescribeCurrentLicense();
+        LicenseDeviceText.Text = _licenseService.DeviceId;
+        AppendLog("VProxies SA 1.5.0 ready.");
     }
 
     private void LoadSettings()
@@ -504,6 +508,13 @@ public partial class MainWindow : Window
     {
         LogBox.Document.Blocks.Clear();
         LogPageBox.Document.Blocks.Clear();
+    }
+    private void ChangeLicense_Click(object sender, RoutedEventArgs e)
+    {
+        var activation = new ActivationWindow(_licenseService, "Enter a replacement license for this computer.") { Owner = this };
+        if (activation.ShowDialog() != true) return;
+        LicenseStatusText.Text = _licenseService.DescribeCurrentLicense();
+        AppendLog("License updated successfully.");
     }
     private static SolidColorBrush Brush(string color) => new((MediaColor)MediaColorConverter.ConvertFromString(color));
 

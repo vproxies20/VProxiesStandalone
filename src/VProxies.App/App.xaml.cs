@@ -22,7 +22,20 @@ public partial class App : System.Windows.Application
         DispatcherUnhandledException += App_DispatcherUnhandledException;
         try
         {
-            var window = new MainWindow();
+            var licenseService = new LicenseService();
+            var licenseStatus = licenseService.LoadInstalledLicense();
+            if (!licenseStatus.IsValid)
+            {
+                var activation = new ActivationWindow(licenseService, licenseStatus.Message);
+                MainWindow = activation;
+                if (activation.ShowDialog() != true)
+                {
+                    Shutdown();
+                    return;
+                }
+            }
+
+            var window = new MainWindow(licenseService);
             MainWindow = window;
             window.Show();
         }

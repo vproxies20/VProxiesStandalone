@@ -1,4 +1,4 @@
-# VProxies SA 1.4.0
+# VProxies SA 1.5.0
 
 VProxies SA is an independent Windows proxy-routing client. It does not contain, derive from, or redistribute Proxifier code or drivers.
 
@@ -22,6 +22,8 @@ VProxies SA has a separate application identity from the packaged-proxy edition:
 - Minimize to the Windows notification area. Tray `Exit` always asks for confirmation.
 - Clean shutdown of the complete sing-box process tree and removal of temporary configurations.
 - Single-instance protection and no CMD/PowerShell/Python window at runtime.
+- Offline ECDSA-signed license activation, bound to one Windows computer.
+- Lifetime or expiring licenses issued with a separate private generator that is never included in the customer installer.
 
 ## Routing example
 
@@ -54,12 +56,16 @@ Set-ExecutionPolicy -Scope Process Bypass
 The installer is generated at:
 
 ```text
-artifacts\VProxiesSASetup-1.4.0-win-x64.exe
+artifacts\VProxiesSASetup-1.5.0-win-x64.exe
 ```
 
 ## GitHub Actions
 
-The `Build VProxies SA Windows Installer` workflow builds the installer, generates a SHA-256 file, uploads the build artifact, and publishes release `v1.4.0` from the `main` branch.
+The `Build VProxies SA Windows Installer` workflow builds the installer, generates a SHA-256 file, uploads the build artifact, and publishes release `v1.5.0` from the `main` branch.
+
+## License administration
+
+The customer application contains only the public verification key. The private signing key and private generator must remain outside GitHub and outside the installer. See `LICENSE-ADMIN.md` for the issuance workflow.
 
 ## Runtime and security notes
 

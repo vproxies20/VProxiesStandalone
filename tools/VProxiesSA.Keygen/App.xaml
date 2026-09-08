@@ -1,0 +1,9 @@
+<Application x:Class="VProxiesSA.Keygen.App" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" StartupUri="MainWindow.xaml">
+  <Application.Resources>
+    <SolidColorBrush x:Key="Page" Color="#111827"/><SolidColorBrush x:Key="Panel" Color="#1B2535"/><SolidColorBrush x:Key="Input" Color="#131D2A"/><SolidColorBrush x:Key="Line" Color="#334155"/><SolidColorBrush x:Key="Text" Color="#F8FAFC"/><SolidColorBrush x:Key="Muted" Color="#94A3B8"/><SolidColorBrush x:Key="Accent" Color="#13DCEB"/>
+    <Style TargetType="TextBox"><Setter Property="Background" Value="{StaticResource Input}"/><Setter Property="Foreground" Value="{StaticResource Text}"/><Setter Property="CaretBrush" Value="{StaticResource Accent}"/><Setter Property="BorderBrush" Value="{StaticResource Line}"/><Setter Property="Padding" Value="11,8"/><Setter Property="Margin" Value="0,5,0,12"/></Style>
+    <Style TargetType="DatePicker"><Setter Property="Margin" Value="0,5,0,12"/><Setter Property="Padding" Value="8"/></Style>
+    <Style TargetType="CheckBox"><Setter Property="Foreground" Value="{StaticResource Text}"/><Setter Property="Margin" Value="0,6"/></Style>
+    <Style TargetType="Button"><Setter Property="Background" Value="#23344E"/><Setter Property="Foreground" Value="{StaticResource Text}"/><Setter Property="BorderBrush" Value="#3B5578"/><Setter Property="Padding" Value="16,9"/><Setter Property="Margin" Value="4"/><Setter Property="FontWeight" Value="SemiBold"/></Style>
+  </Application.Resources>
+</Application>
