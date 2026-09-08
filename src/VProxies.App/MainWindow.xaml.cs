@@ -39,7 +39,7 @@ public partial class MainWindow : Window
         Closing += MainWindow_Closing;
         LoadSettings();
         ShowPage(ProxyPage, ProxyNavButton, "VProxies SA", "Local multi-proxy routing");
-        AppendLog("VProxies SA 1.3.0 ready. Local routing only; no account or API connection.");
+        AppendLog("VProxies SA 1.3.1 ready. Local routing only; no account or API connection.");
     }
 
     private void LoadSettings()
