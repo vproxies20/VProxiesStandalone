@@ -38,7 +38,8 @@ public partial class MainWindow : Window
         StateChanged += MainWindow_StateChanged;
         Closing += MainWindow_Closing;
         LoadSettings();
-        AppendLog("VProxies SA 1.2.1 ready. Local routing only; no account or API connection.");
+        ShowPage(ProxyPage, ProxyNavButton, "VProxies SA", "Local multi-proxy routing");
+        AppendLog("VProxies SA 1.3.0 ready. Local routing only; no account or API connection.");
     }
 
     private void LoadSettings()
@@ -306,6 +307,28 @@ public partial class MainWindow : Window
         if (!_loadingSettings) SaveSettings();
     }
 
+    private void ProxyNav_Click(object sender, RoutedEventArgs e) => ShowPage(ProxyPage, ProxyNavButton, "VProxies SA", "Local multi-proxy routing");
+    private void SettingsNav_Click(object sender, RoutedEventArgs e) => ShowPage(SettingsPage, SettingsNavButton, "VProxies SA", "SETTINGS");
+    private void LogNav_Click(object sender, RoutedEventArgs e) => ShowPage(ActivityLogPage, LogNavButton, "VProxies SA", "ACTIVITY LOG");
+
+    private void ShowPage(UIElement page, Button selectedButton, string title, string subtitle)
+    {
+        ProxyPage.Visibility = page == ProxyPage ? Visibility.Visible : Visibility.Collapsed;
+        SettingsPage.Visibility = page == SettingsPage ? Visibility.Visible : Visibility.Collapsed;
+        ActivityLogPage.Visibility = page == ActivityLogPage ? Visibility.Visible : Visibility.Collapsed;
+        foreach (var button in new[] { ProxyNavButton, SettingsNavButton, LogNavButton })
+        {
+            button.Background = Brushes.Transparent;
+            button.BorderBrush = Brushes.Transparent;
+            button.Foreground = Brush("#8FA3BE");
+        }
+        selectedButton.Background = Brush("#1C2A39");
+        selectedButton.BorderBrush = Brush("#2ED7B2");
+        selectedButton.Foreground = Brush("#53E7C2");
+        PageTitleText.Text = title;
+        PageSubtitleText.Text = subtitle;
+    }
+
     private async void ApplyRouting_Click(object sender, RoutedEventArgs e)
     {
         ApplyRoutingButton.IsEnabled = false;
@@ -369,11 +392,22 @@ public partial class MainWindow : Window
         paragraph.Inlines.Add(new Run($"  {level,-5}  ") { Foreground = Brush(level == "ERROR" ? "#FF6689" : level == "WARN" ? "#FFC857" : "#45DFA2"), FontWeight = FontWeights.Bold });
         paragraph.Inlines.Add(new Run(message) { Foreground = Brush("#D8E5F5") });
         LogBox.Document.Blocks.Add(paragraph);
+        var fullParagraph = new Paragraph { Margin = new Thickness(0, 0, 0, 5) };
+        fullParagraph.Inlines.Add(new Run(DateTime.Now.ToString("HH:mm:ss")) { Foreground = Brush("#7186A3") });
+        fullParagraph.Inlines.Add(new Run($"  {level,-5}  ") { Foreground = Brush(level == "ERROR" ? "#FF6689" : level == "WARN" ? "#FFC857" : "#45DFA2"), FontWeight = FontWeights.Bold });
+        fullParagraph.Inlines.Add(new Run(message) { Foreground = Brush("#D8E5F5") });
+        LogPageBox.Document.Blocks.Add(fullParagraph);
         while (LogBox.Document.Blocks.Count > 400 && LogBox.Document.Blocks.FirstBlock is Block first) LogBox.Document.Blocks.Remove(first);
+        while (LogPageBox.Document.Blocks.Count > 400 && LogPageBox.Document.Blocks.FirstBlock is Block fullFirst) LogPageBox.Document.Blocks.Remove(fullFirst);
         LogBox.ScrollToEnd();
+        LogPageBox.ScrollToEnd();
     }
 
-    private void ClearLog_Click(object sender, RoutedEventArgs e) => LogBox.Document.Blocks.Clear();
+    private void ClearLog_Click(object sender, RoutedEventArgs e)
+    {
+        LogBox.Document.Blocks.Clear();
+        LogPageBox.Document.Blocks.Clear();
+    }
     private static SolidColorBrush Brush(string color) => new((MediaColor)MediaColorConverter.ConvertFromString(color));
 
     private void MainWindow_StateChanged(object? sender, EventArgs e)
