@@ -34,7 +34,7 @@ public static class SecretStore
             Marshal.Copy(input, 0, inBlob.Data, input.Length);
             Blob output;
             var ok = protect
-                ? CryptProtectData(ref inBlob, "VProxies proxy credential", IntPtr.Zero, IntPtr.Zero, IntPtr.Zero, 1, out output)
+                ? CryptProtectData(ref inBlob, "VProxies SA proxy credential", IntPtr.Zero, IntPtr.Zero, IntPtr.Zero, 1, out output)
                 : CryptUnprotectData(ref inBlob, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero, 1, out output);
             if (!ok) throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
             try { var bytes = new byte[output.Size]; Marshal.Copy(output.Data, bytes, 0, output.Size); return bytes; }
@@ -47,7 +47,7 @@ public static class SecretStore
 public sealed class SettingsStore
 {
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
-    private readonly string _path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "VProxies", "settings.json");
+    private readonly string _path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "VProxiesSA", "settings.json");
 
     public StoredSettings Load()
     {
