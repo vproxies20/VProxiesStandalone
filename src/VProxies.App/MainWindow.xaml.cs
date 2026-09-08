@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.IO;
+using System.Net;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
@@ -37,7 +38,7 @@ public partial class MainWindow : Window
         StateChanged += MainWindow_StateChanged;
         Closing += MainWindow_Closing;
         LoadSettings();
-        AppendLog("VProxies SA 1.2.0 ready. Local routing only; no account or API connection.");
+        AppendLog("VProxies SA 1.2.1 ready. Local routing only; no account or API connection.");
     }
 
     private void LoadSettings()
@@ -65,6 +66,7 @@ public partial class MainWindow : Window
                 TargetExists(x.Target) ? x.Target : "direct")));
             StrictRouteBox.IsChecked = settings.StrictRoute;
             RemoteDnsBox.IsChecked = settings.RemoteDns;
+            DnsServerBox.Text = string.IsNullOrWhiteSpace(settings.DnsServer) ? "1.1.1.1" : settings.DnsServer;
             CloseToTrayBox.IsChecked = settings.CloseToTray;
             RefreshProxyGrid();
             RefreshTargets(TargetExists(settings.DefaultTarget) ? settings.DefaultTarget : "direct", "direct");
@@ -88,6 +90,7 @@ public partial class MainWindow : Window
             DefaultTarget = DefaultTargetBox.SelectedValue as string ?? "direct",
             StrictRoute = StrictRouteBox.IsChecked == true,
             RemoteDns = RemoteDnsBox.IsChecked == true,
+            DnsServer = string.IsNullOrWhiteSpace(DnsServerBox.Text) ? "1.1.1.1" : DnsServerBox.Text.Trim(),
             CloseToTray = CloseToTrayBox.IsChecked == true
         });
     }
@@ -308,12 +311,16 @@ public partial class MainWindow : Window
         ApplyRoutingButton.IsEnabled = false;
         try
         {
+            var dnsServer = string.IsNullOrWhiteSpace(DnsServerBox.Text) ? "1.1.1.1" : DnsServerBox.Text.Trim();
+            if (RemoteDnsBox.IsChecked == true && !IPAddress.TryParse(dnsServer, out _))
+                throw new ArgumentException("DNS server must be a valid IPv4 or IPv6 address, for example 1.1.1.1 or 8.8.8.8.");
             SaveSettings();
             var routing = new RoutingSettings
             {
                 Proxies = _proxies.ToArray(), Rules = _rules.ToArray(),
                 DefaultTarget = DefaultTargetBox.SelectedValue as string ?? "direct",
-                StrictRoute = StrictRouteBox.IsChecked == true, RemoteDns = RemoteDnsBox.IsChecked == true
+                StrictRoute = StrictRouteBox.IsChecked == true, RemoteDns = RemoteDnsBox.IsChecked == true,
+                DnsServer = dnsServer
             };
             _sensitiveLogValues.Clear();
             foreach (var proxy in _proxies)
