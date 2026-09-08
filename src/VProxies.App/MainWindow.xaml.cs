@@ -257,7 +257,7 @@ public partial class MainWindow : Window
 
     private void BrowseApplication_Click(object sender, RoutedEventArgs e)
     {
-        var dialog = new OpenFileDialog { Title = "Choose a Windows application", Filter = "Windows applications (*.exe)|*.exe", CheckFileExists = true, Multiselect = false };
+        var dialog = new Microsoft.Win32.OpenFileDialog { Title = "Choose a Windows application", Filter = "Windows applications (*.exe)|*.exe", CheckFileExists = true, Multiselect = false };
         if (dialog.ShowDialog(this) == true) ApplicationPathBox.Text = dialog.FileName;
     }
 
