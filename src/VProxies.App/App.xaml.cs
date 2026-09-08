@@ -10,10 +10,10 @@ public partial class App : System.Windows.Application
 
     protected override void OnStartup(StartupEventArgs e)
     {
-        _singleInstance = new Mutex(true, @"Local\VProxies.Windows.SingleInstance", out var createdNew);
+        _singleInstance = new Mutex(true, @"Local\VProxiesSA.Windows.SingleInstance", out var createdNew);
         if (!createdNew)
         {
-            System.Windows.MessageBox.Show("VProxies is already running. Check the taskbar notification area.", "VProxies", MessageBoxButton.OK, MessageBoxImage.Information);
+            System.Windows.MessageBox.Show("VProxies SA is already running. Check the taskbar notification area.", "VProxies SA", MessageBoxButton.OK, MessageBoxImage.Information);
             Shutdown();
             return;
         }
@@ -42,15 +42,15 @@ public partial class App : System.Windows.Application
 
     private static void ShowStartupFailure(Exception exception)
     {
-        var directory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "VProxies");
+        var directory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "VProxiesSA");
         var logPath = Path.Combine(directory, "startup-crash.log");
         try
         {
             Directory.CreateDirectory(directory);
-            File.AppendAllText(logPath, $"[{DateTimeOffset.Now:O}] VProxies startup failure\r\n{exception}\r\n\r\n");
+            File.AppendAllText(logPath, $"[{DateTimeOffset.Now:O}] VProxies SA startup failure\r\n{exception}\r\n\r\n");
         }
         catch { }
-        System.Windows.MessageBox.Show($"VProxies could not start.\n\n{exception.Message}\n\nDiagnostic log: {logPath}", "VProxies Startup Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        System.Windows.MessageBox.Show($"VProxies SA could not start.\n\n{exception.Message}\n\nDiagnostic log: {logPath}", "VProxies SA Startup Error", MessageBoxButton.OK, MessageBoxImage.Error);
     }
 
     protected override void OnExit(ExitEventArgs e)
