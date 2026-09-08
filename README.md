@@ -1,6 +1,8 @@
-# VProxies for Windows 1.1.1 — Standalone multi-proxy routing
+# VProxies SA 1.2.0 — Standalone multi-proxy routing for Windows
 
-VProxies is an independent Windows proxy-routing client. It does not contain, derive from, or redistribute Proxifier code or drivers.
+VProxies SA is an independent Windows proxy-routing client. It does not contain, derive from, or redistribute Proxifier code or drivers.
+
+VProxies SA has a separate application identity from the packaged-proxy edition: it installs to `C:\Program Files\VProxiesSA`, runs as `VProxiesSA.exe`, and stores settings in `%LocalAppData%\VProxiesSA`. Both editions can therefore be installed side by side without overwriting each other.
 
 ## V1 scope
 
@@ -48,18 +50,18 @@ Set-ExecutionPolicy -Scope Process Bypass
 The installer is generated at:
 
 ```text
-artifacts\VProxiesSetup-1.1.1-win-x64.exe
+artifacts\VProxiesSASetup-1.2.0-win-x64.exe
 ```
 
 ## GitHub Actions
 
-The `Build VProxies Windows Installer` workflow builds the installer, generates a SHA-256 file, uploads the build artifact, and publishes release `v1.1.1` from the `main` branch.
+The `Build VProxies SA Windows Installer` workflow builds the installer, generates a SHA-256 file, uploads the build artifact, and publishes release `v1.2.0` from the `main` branch.
 
 ## Runtime and security notes
 
 - The application requires administrator permission because TUN routing modifies Windows network routes.
 - The generated configuration always includes explicit `direct` and `block` outbounds.
-- VProxies and sing-box processes, private network destinations, and literal upstream proxy IPs bypass the TUN to prevent routing loops.
+- VProxies SA and sing-box processes, private network destinations, and literal upstream proxy IPs bypass the TUN to prevent routing loops.
 - Source credentials exist only in memory and in the temporary sing-box configuration. The temporary file is deleted immediately after startup and again during shutdown cleanup.
 - Use only proxy servers that you own or are authorized to use.
 
