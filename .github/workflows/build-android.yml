@@ -1,0 +1,130 @@
+name: Build VProxies SA Android APK
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "android/**"
+      - ".github/workflows/build-android.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  # Same routing core version as the Windows edition.
+  SING_BOX_VERSION: v1.14.0
+  # Go and NDK versions used by sing-box's own release workflow for this tag.
+  GO_VERSION: "1.26.7"
+  APP_VERSION: "1.4.0"
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Restore cached libbox.aar
+        id: libbox-cache
+        uses: actions/cache@v4
+        with:
+          path: android/app/libs/libbox.aar
+          key: libbox-${{ env.SING_BOX_VERSION }}-arm64-arm-v1
+
+      - name: Set up Go
+        if: steps.libbox-cache.outputs.cache-hit != 'true'
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: false
+
+      - name: Set up Android NDK
+        if: steps.libbox-cache.outputs.cache-hit != 'true'
+        id: setup-ndk
+        uses: nttld/setup-ndk@v1
+        with:
+          ndk-version: r28
+
+      - name: Build libbox.aar from sing-box ${{ env.SING_BOX_VERSION }}
+        if: steps.libbox-cache.outputs.cache-hit != 'true'
+        env:
+          ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
+        run: |
+          set -euo pipefail
+          git clone --depth 1 --branch "$SING_BOX_VERSION" https://github.com/SagerNet/sing-box.git "$RUNNER_TEMP/sing-box"
+          cd "$RUNNER_TEMP/sing-box"
+          make lib_install
+          export PATH="$PATH:$(go env GOPATH)/bin"
+          # Official build script, limited to real-device ABIs (arm64-v8a and armeabi-v7a).
+          go run ./cmd/internal/build_libbox -target android -platform android/arm64,android/arm
+          mkdir -p "$GITHUB_WORKSPACE/android/app/libs"
+          cp libbox.aar "$GITHUB_WORKSPACE/android/app/libs/libbox.aar"
+          ls -la "$GITHUB_WORKSPACE/android/app/libs"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Prepare release signing key
+        id: signing
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "${KEYSTORE_BASE64}" ]; then
+            echo "${KEYSTORE_BASE64}" | base64 -d > "$RUNNER_TEMP/vproxies-release.jks"
+            echo "VPROXIES_KEYSTORE=$RUNNER_TEMP/vproxies-release.jks" >> "$GITHUB_ENV"
+            echo "signed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::ANDROID_KEYSTORE_BASE64 is not set. The APK is signed with a temporary debug key; installed copies cannot be updated by a later build signed with a different key."
+            echo "signed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build APK
+        working-directory: android
+        env:
+          VPROXIES_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          VPROXIES_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          VPROXIES_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon --stacktrace assembleRelease
+
+      - name: Collect APK and checksum
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+          apk=$(ls android/app/build/outputs/apk/release/*.apk | head -n 1)
+          cp "$apk" "artifacts/VProxiesSA-${APP_VERSION}-android.apk"
+          cd artifacts
+          sha256sum "VProxiesSA-${APP_VERSION}-android.apk" > "VProxiesSA-${APP_VERSION}-android.apk.sha256"
+          ls -la
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: VProxiesSA-${{ env.APP_VERSION }}-android
+          path: |
+            artifacts/VProxiesSA-${{ env.APP_VERSION }}-android.apk
+            artifacts/VProxiesSA-${{ env.APP_VERSION }}-android.apk.sha256
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Attach APK to GitHub release
+        if: github.ref == 'refs/heads/main' && steps.signing.outputs.signed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="v${APP_VERSION}"
+          apk="artifacts/VProxiesSA-${APP_VERSION}-android.apk"
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            gh release upload "$tag" "$apk" "$apk.sha256" --clobber --repo "$GITHUB_REPOSITORY"
+          else
+            gh release create "$tag" "$apk" "$apk.sha256" --target "$GITHUB_SHA" --title "VProxies SA ${APP_VERSION}" --generate-notes --repo "$GITHUB_REPOSITORY"
+          fi

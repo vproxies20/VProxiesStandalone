@@ -3,6 +3,9 @@ name: Build VProxies SA Windows Installer
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - "android/**"
+      - ".github/workflows/build-android.yml"
   workflow_dispatch:
 
 permissions:

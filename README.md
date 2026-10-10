@@ -35,6 +35,10 @@ VProxies SA has a separate application identity from the packaged-proxy edition:
 
 All rules are applied concurrently by one sing-box TUN engine. A proxy connection is opened only when matching application traffic needs it.
 
+## Android edition
+
+An Android 10+ edition lives in [`android/`](android/README.md). It uses the same sing-box 1.14.0 routing core through `VpnService` (no root), matches apps by package name instead of `.exe` path, and is built into an APK by the `Build VProxies SA Android APK` workflow.
+
 ## Build on Windows
 
 Requirements:
